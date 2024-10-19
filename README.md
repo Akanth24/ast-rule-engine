@@ -77,7 +77,7 @@ In the "Create Rule" section, users can input a rule string (e.g., `(age > 30 AN
 
 ### 3. Combine Rules
 
-Users can select multiple rules to combine into a single AST, optimizing for efficiency. This page can be navigated from evaluate rules when we need to provide input AST. We can also directly go to this page and try any combinations of rules just for checking.
+Users can select multiple rules to combine into a single Abstract Syntax Tree (AST), optimizing for efficiency and minimizing redundant checks using the heuristic of balancing the tree by the frequency of operators. This page can be accessed from the 'Evaluate Rules' section when inputting an AST, and users can also navigate directly to this page to experiment with different combinations of rules for testing purposes.
 
 | Combine Rules | Combine Rules 2 |
 |---------------|-----------------|
