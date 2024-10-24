@@ -12,6 +12,7 @@ import {
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import Swal from "sweetalert2";
+import LoadingScreen from "@/components/LoadingScreen";
 
 const BACKEND_API_URL = process.env.BACKEND_API_URL;
 
@@ -25,17 +26,22 @@ const HomePage = () => {
   const [editRule, setEditRule] = useState(null); // Track the rule being edited
   const [showEditModal, setShowEditModal] = useState(false); // For edit modal
   const [newRule, setNewRule] = useState(""); // For updating rule in modal
-  useEffect(() => {
-    // Fetch the list of rules from the backend
-    const fetchRules = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_API_URL}/rule/existing`);
-        setRules(response.data);
-      } catch (error) {
-        console.error("Error fetching rules:", error);
-      }
-    };
+  const [loading, setLoading] = useState(true);
 
+  // Fetch the list of rules from the backend
+  const fetchRules = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${BACKEND_API_URL}/rule/existing`);
+      setRules(response.data);
+    } catch (error) {
+      console.error("Error fetching rules:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchRules();
   }, []);
 
@@ -96,7 +102,6 @@ const HomePage = () => {
         try {
           await axios.delete(`${BACKEND_API_URL}/rule/${ruleId}`);
           setRules(rules.filter((rule) => rule._id !== ruleId)); // Remove deleted rule from the list
-
           Swal.fire("Deleted!", "Your rule has been deleted.", "success");
         } catch (error) {
           console.error("Error deleting rule:", error);
@@ -130,7 +135,7 @@ const HomePage = () => {
         r._id === editRule._id ? { ...r, rule: newRule } : r
       );
       setRules(updatedRules);
-
+      fetchRules();
       Swal.fire("Success!", "Rule has been updated.", "success");
       handleEditModalClose();
     } catch (error) {
@@ -141,77 +146,81 @@ const HomePage = () => {
   return (
     <div className="container my-5">
       <h2>List of Rules</h2>
-      <div
-        className="row p-4 rounded mt-4"
-        style={{ backgroundColor: "#e7f0ff" }}
-      >
-        {rules.length === 0 ? (
-          <div className="text-center mt-5">
-            <h4>No rules available</h4>
-            <button onClick={handleCreateRule} className="create-button mt-3">
-              <FontAwesomeIcon icon={faPlus} className="me-2" />
-              Create a New Rule
-            </button>
-          </div>
-        ) : (
-          rules.map((rule, index) => (
-            <div className="col-md-4" key={rule._id}>
-              <Card className="mb-4 shadow-sm">
-                <Card.Body>
-                  <Card.Title className="d-flex flex-row justify-content-between">
-                    {`Rule ${index + 1}`}
-                    <div>
-                      {/* Edit Button */}
+      {loading ? (
+        <LoadingScreen />
+      ) : (
+        <div
+          className="row p-4 rounded mt-4"
+          style={{ backgroundColor: "#e7f0ff" }}
+        >
+          {rules.length === 0 ? (
+            <div className="text-center mt-5">
+              <h4>No rules available</h4>
+              <button onClick={handleCreateRule} className="create-button mt-3">
+                <FontAwesomeIcon icon={faPlus} className="me-2" />
+                Create a New Rule
+              </button>
+            </div>
+          ) : (
+            rules.map((rule, index) => (
+              <div className="col-md-4" key={rule._id}>
+                <Card className="mb-4 shadow-sm">
+                  <Card.Body>
+                    <Card.Title className="d-flex flex-row justify-content-between">
+                      {`Rule ${index + 1}`}
+                      <div>
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => handleEditModalOpen(rule)}
+                          className="edit-delete-button mr-2"
+                          style={{ color: "#0a48b2" }}
+                        >
+                          <FontAwesomeIcon icon={faPen} />
+                        </button>
+
+                        {/* Delete button */}
+                        <button
+                          onClick={() => handleDeleteRule(rule._id)}
+                          className="edit-delete-button"
+                          style={{ color: "#f81b1b" }}
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    </Card.Title>
+                    <Card.Text className="mt-4">{rule.rule}</Card.Text>
+
+                    <div className="d-flex flex-row justify-content-between mt-5">
+                      {/* Button to open the AST modal */}
                       <button
-                        onClick={() => handleEditModalOpen(rule)}
-                        className="edit-delete-button mr-2"
-                        style={{color:'#0a48b2'}} 
+                        onClick={() => handleASTModalOpen(rule.ast)}
+                        className="view-button"
+                        style={{ backgroundColor: "#0a48b2" }}
                       >
-                        <FontAwesomeIcon icon={faPen} />
+                        <FontAwesomeIcon icon={faCode} className="me-2" /> View
+                        AST
                       </button>
 
-                      {/* Delete button */}
+                      {/* Button to open the Graphical AST modal */}
                       <button
-                        onClick={() => handleDeleteRule(rule._id)}
-                        className="edit-delete-button"
-                        style={{color:'#f81b1b'}} 
+                        onClick={() => handleGraphicalModalOpen(rule.ast)}
+                        className="view-button"
+                        style={{ backgroundColor: "#fff", color: "#0a48b2" }}
                       >
-                        <FontAwesomeIcon icon={faTrash} />
+                        <FontAwesomeIcon
+                          icon={faDiagramProject}
+                          className="me-2"
+                        />{" "}
+                        Graphical AST
                       </button>
                     </div>
-                  </Card.Title>
-                  <Card.Text className="mt-4">{rule.rule}</Card.Text>
-
-                  <div className="d-flex flex-row justify-content-between mt-5">
-                    {/* Button to open the AST modal */}
-                    <button
-                      onClick={() => handleASTModalOpen(rule.ast)}
-                      className="view-button"
-                      style={{ backgroundColor: "#0a48b2" }}
-                    >
-                      <FontAwesomeIcon icon={faCode} className="me-2" /> View
-                      AST
-                    </button>
-
-                    {/* Button to open the Graphical AST modal */}
-                    <button
-                      onClick={() => handleGraphicalModalOpen(rule.ast)}
-                      className="view-button"
-                      style={{ backgroundColor: "#fff", color: "#0a48b2" }}
-                    >
-                      <FontAwesomeIcon
-                        icon={faDiagramProject}
-                        className="me-2"
-                      />{" "}
-                      Graphical AST
-                    </button>
-                  </div>
-                </Card.Body>
-              </Card>
-            </div>
-          ))
-        )}
-      </div>
+                  </Card.Body>
+                </Card>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* AST Modal */}
       <Modal show={showASTModal} onHide={handleASTModalClose} size="lg">
@@ -271,10 +280,18 @@ const HomePage = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <button className="cancel-button" style={{backgroundColor:'#555'}} onClick={handleEditModalClose}>
+          <button
+            className="cancel-button"
+            style={{ backgroundColor: "#555" }}
+            onClick={handleEditModalClose}
+          >
             Cancel
           </button>
-          <button className="save-button" style={{backgroundColor:'#0a48b2'}}onClick={handleEditSubmit}>
+          <button
+            className="save-button"
+            style={{ backgroundColor: "#0a48b2" }}
+            onClick={handleEditSubmit}
+          >
             Save Changes
           </button>
         </Modal.Footer>
@@ -299,7 +316,8 @@ const HomePage = () => {
           transform: scale(1.1);
         }
 
-        .save-button,.cancel-button {
+        .save-button,
+        .cancel-button {
           background-color: inherit;
           color: white;
           padding: 10px 20px;
@@ -310,7 +328,8 @@ const HomePage = () => {
           font-weight: 500;
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        .save-button:hover,.cancel-button:hover {
+        .save-button:hover,
+        .cancel-button:hover {
           transform: scale(1.1);
         }
 
@@ -329,15 +348,15 @@ const HomePage = () => {
           transform: scale(1.1);
         }
 
-        .edit-delete-button{
-            color:inherit;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            transition: ease 0.4s;
+        .edit-delete-button {
+          color: inherit;
+          background-color: transparent;
+          border: none;
+          cursor: pointer;
+          transition: ease 0.4s;
         }
-        .edit-delete-button:hover{
-            transform: scale(1.2);
+        .edit-delete-button:hover {
+          transform: scale(1.2);
         }
       `}</style>
     </div>
